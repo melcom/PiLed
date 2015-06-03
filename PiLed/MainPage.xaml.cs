@@ -1,19 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
-
-// The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
 namespace PiLed
 {
@@ -26,6 +16,11 @@ namespace PiLed
         private readonly StackPanel[] spColumns;
         private int columnIndex;
         private DispatcherTimer timer;
+        private readonly LedController led;
+
+        private readonly int[][] motifa;
+        private readonly int[][] motifb;
+        private readonly int[][] motifc;
 
         public MainPage()
         {
@@ -122,11 +117,63 @@ namespace PiLed
 
             #endregion
 
-            columnIndex = 0;
+            #region Timer
 
             timer = new DispatcherTimer();
-            timer.Interval = new TimeSpan(0, 0, 1);
+            timer.Interval = new TimeSpan(0, 0, 0, 0, 300);
             timer.Tick += Timer_Tick;
+
+            #endregion
+
+            #region Motifs
+
+            motifa = new int[8][]
+            {
+                new int[8] { 1, 0, 0, 0, 0, 0, 0, 0 },
+                new int[8] { 0, 1, 0, 0, 0, 0, 0, 0 },
+                new int[8] { 0, 0, 1, 0, 0, 0, 0, 0 },
+                new int[8] { 0, 0, 0, 1, 0, 0, 0, 0 },
+                new int[8] { 0, 0, 0, 0, 1, 0, 0, 0 },
+                new int[8] { 0, 0, 0, 0, 0, 1, 0, 0 },
+                new int[8] { 0, 0, 0, 0, 0, 0, 1, 0 },
+                new int[8] { 0, 0, 0, 0, 0, 0, 0, 1 }
+            };
+
+            motifb = new int[8][]
+            {
+                new int[8] { 1, 0, 1, 0, 1, 0, 1, 0 },
+                new int[8] { 0, 1, 0, 1, 0, 1, 0, 1 },
+                new int[8] { 1, 0, 1, 0, 1, 0, 1, 0 },
+                new int[8] { 0, 1, 0, 1, 0, 1, 0, 1 },
+                new int[8] { 1, 0, 1, 0, 1, 0, 1, 0 },
+                new int[8] { 0, 1, 0, 1, 0, 1, 0, 1 },
+                new int[8] { 1, 0, 1, 0, 1, 0, 1, 0 },
+                new int[8] { 0, 1, 0, 1, 0, 1, 0, 1 }
+            };
+
+            motifc = new int[8][]
+            {
+                new int[8] { 1, 0, 0, 0, 0, 0, 0, 1 },
+                new int[8] { 0, 1, 0, 0, 0, 0, 1, 0 },
+                new int[8] { 0, 0, 1, 0, 0, 1, 0, 0 },
+                new int[8] { 0, 0, 0, 1, 1, 0, 0, 0 },
+                new int[8] { 0, 0, 0, 1, 1, 0, 0, 0 },
+                new int[8] { 0, 0, 1, 0, 0, 1, 0, 0 },
+                new int[8] { 0, 1, 0, 0, 0, 0, 1, 0 },
+                new int[8] { 1, 0, 0, 0, 0, 0, 0, 1 }
+            };
+
+            #endregion
+
+            columnIndex = 0;
+
+            led = new LedController();
+            tbMessage.Text = led.InitializeSystem();
+        }
+
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            led.Dispose();
         }
 
         private void Timer_Tick(object sender, object e)
@@ -137,6 +184,7 @@ namespace PiLed
             byte current = GetTCurrentToggleButtonsValue();
 
             tbMessage.Text = string.Format("Sending {0} value", current);
+            led.Write(current);
 
             if (++columnIndex >= 8)
                 columnIndex = 0;
@@ -161,12 +209,14 @@ namespace PiLed
         {
             timer.Start();
             tbMessage.Text = "Start timer";
+            led.EnableOutput();
         }
 
         private void btStop_Click(object sender, RoutedEventArgs e)
         {
             timer.Stop();
             tbMessage.Text = "Stop timer";
+            led.DisableOuput();
         }
 
         private void btClear_Click(object sender, RoutedEventArgs e)
@@ -178,6 +228,34 @@ namespace PiLed
                     tbs[i][j].IsChecked = false;
                 }
             }
+            led.ClearOutput();
+        }
+
+        private void SetMotif(int[][] motif)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                for (int j = 0; j < 8; j++)
+                {
+                    tbs[i][j].IsChecked = motif[i][j] == 1;
+                }
+            }
+            led.ClearOutput();
+        }
+
+        private void btMotifA_Click(object sender, RoutedEventArgs e)
+        {
+            SetMotif(motifa);
+        }
+
+        private void btMotifB_Click(object sender, RoutedEventArgs e)
+        {
+            SetMotif(motifb);
+        }
+
+        private void btMotifC_Click(object sender, RoutedEventArgs e)
+        {
+            SetMotif(motifc);
         }
     }
 }
